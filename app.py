@@ -46,22 +46,21 @@ app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9
 
 @app.route('/home', methods=['GET'])
 def home():
-	return render_template('home.html')
+        return render_template('home.html')
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
     if request.method == 'POST':
         f = request.form
-        return str(session['accesstoken'])
-        #return "form:{0} \n access_token_arg:{1} \n access_session: {2}".format(str(f), str(request.args['access_token']), str(session['accesstoken']))
-        # if request.args['access_token']:
-        #     access = request.args['access_token']
-        # else:
-        #     access = session['accesstoken']
-        # rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
-        #     f.latitude,f.longitude, f.radius, access)
-        # r = request.get(rurl)
-        # return "<pre>{0}</pre>".format(str(r.text))
+        return "form:{0} \n access_token_arg:{1} \n access_session: {2}".format(str(f), str(request.args['access_token']), str(session['accesstoken']))
+        if 'accesstoken' in session:
+            access = session['accesstoken']
+        else:
+            access = 'fake'
+        rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
+            f.latitude,f.longitude, f.radius, access)
+        r = request.get(rurl)
+        return "<pre>{0}</pre>".format(str(r.text))
     elif request.method == 'GET':
         return render_template('apiTest.html')
     else:
