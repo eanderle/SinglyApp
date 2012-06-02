@@ -18,7 +18,10 @@ def api_call(url):
 
 @app.route('/')
 def hello():
-    return render_template('index.html')
+    if 'accesstoken' in session:
+        return redirect('/home')
+    else:
+        return render_template('index.html')
 
 @app.route('/signin-twitter')
 def toAuth():
