@@ -1,78 +1,47 @@
 import os
 from pymaps import Map, PyMap, Icon # import the libraries
-from flask import Flask
+from flask import Flask, request, redirect, session
 from flask import render_template
+import requests
 
 app = Flask(__name__)
 
-def getcords(d, m, s, ind):
-    # Calculate the total number of seconds, 
-    # 43'41" = (43*60 + 41) = 2621 seconds.
-
-    sec = float((m * 60) + s)
-    # The fractional part is total number of 
-    # seconds divided by 3600. 2621 / 3600 = ~0.728056
-
-    frac = float(sec / 3600)
-    # Add fractional degrees to whole degrees 
-    # to produce the final result: 87 + 0.728056 = 87.728056
-
-    deg = float(d + frac)
-    # If it is a West or S longitude coordinate, negate the result.
-    if ind == 'W':
-        deg = deg * -1
-
-    if ind == 'S':
-        deg = deg * -1
-
-    return float(deg)
-
-def showmap():
-    # Create a map - pymaps allows multiple maps in an object
-    icon = Icon()
-    tmap = Map()
-    tmap.zoom = 3
-
-    # Latitude and lognitude - see the getcords function
-    # to see how we convert from traditional D/M/S to the DD type
-    # used by Googel Maps
-
-    latitude = 0.0
-    longitude = 0.0
-
-    # These coordinates are for Hong Kong
-    dlat = "22 15 0 N"
-    dlong = "114 10 60 E"
-
-    dlat = dlat.split()
-    dlong = dlong.split()
-
-    # Convert the coordinates
-    latitude = getcords(float(dlat[0]), float(dlat[1]), float(dlat[2]), dlat[3])
-    longitude = getcords(float(dlong[0]), float(dlong[1]), float(dlong[2]), dlong[3])
-
-    # Inserts html into the hover effect
-    pointhtml = "Hello!"
-
-    # Add the point to the map
-    point = (latitude, longitude, pointhtml, icon.id)
-
-    tmap.setpoint(point)
-    tmap.center = (1.757537,144.492188)
-
-    # Put your own googl ekey here
-    gmap = PyMap(key='AIzaSyBQY721WCNx1VXer7EdOVhCyMrF42iWq58', maplist=[tmap])
-    gmap.addicon(icon)
-
-    # pymapjs exports all the javascript required to build the map!
-    mapcode = gmap.pymapjs()
-
-    # Do what you want with it - pass it to the template or print it!
-    return mapcode
+SINGLY_CLIENT_ID = 'b4951689e26fe3cc15c2a940db08e7b7'
+SINGLY_CLIENT_SECRET = '0e9aebaa610bd0e68cb2026934bfafbf'
 
 @app.route('/')
 def hello():
-    return render_template('index.html') + showmap()
+    return render_template('index.html')
+
+@app.route('/signin-twitter')
+def toAuth():
+    url = 'https://api.singly.com/oauth/authorize?client_id=b4951689e26fe3cc15c2a940db08e7b7&redirect_uri=http://localhost:5000/callback&service=twitter'
+    return redirect(url)
+
+@app.route('/signin-facebook')
+def authFacebook():
+    url = 'https://api.singly.com/oauth/authorize?client_id=b4951689e26fe3cc15c2a940db08e7b7&redirect_uri=http://localhost:5000/callback&service=facebook'
+    return redirect(url)
+
+@app.route('/signin-foursquare')
+def authFourSquare():
+    url = 'https://api.singly.com/oauth/authorize?client_id=b4951689e26fe3cc15c2a940db08e7b7&redirect_uri=http://localhost:5000/callback&service=foursquare'
+    return redirect(url)
+
+@app.route('/signin-instagram')
+def authInstagram():
+    url = 'https://api.singly.com/oauth/authorize?client_id=b4951689e26fe3cc15c2a940db08e7b7&redirect_uri=http://localhost:5000/callback&service=instagram'
+    return redirect(url)
+
+@app.route('/callback')
+def toAccess():
+    code = request.args['code']
+    postdata = {'client_id': SINGLY_CLIENT_ID, 'client_secret': SINGLY_CLIENT_SECRET, 'code': code}
+    r = requests.post('https://api.singly.com/oauth/access_token', data=postdata)
+    session['accesstoken'] = r.text
+    return redirect('/')
+
+app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
 
 @app.route('/home', methods=['GET'])
 def home():
