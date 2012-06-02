@@ -3,8 +3,8 @@ from pymaps import Map, PyMap, Icon # import the libraries
 from flask import Flask, request, redirect, session, jsonify
 from flask import render_template
 import requests
-import simplejson
-import json
+import simplejson as json
+
 
 app = Flask(__name__)
 
@@ -48,6 +48,19 @@ def authInstagram():
 def testAuth():
     return session['accesstoken']
 
+@app.route('/teststream')
+def testStream():
+    r = requests.post('https://stream.twitter.com/1/statuses/filter.json',
+    data={'track': 'requests'}, auth=('username', 'password'))
+    counter = 1;
+    for line in r.iter_lines():
+        counter = counter + 1
+        if line: # filter out keep-alive new lines
+            if counter < 3:
+                print json.loads(line)
+            else:
+                return "Done"
+
 @app.route('/callback')
 def toAccess():
     code = request.args['code']
@@ -89,13 +102,37 @@ def apitesting():
         rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
             f['latitude'],f['longitude'], f['radius'], access)
         r = requests.get(api_call(rurl))
-        print '\n'.join([l.rstrip() for l in  r.text.splitlines()])
-
-        return "<pre>{0}</pre>".format(str(r.text))
+        j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
+        text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
+        return "<pre>{0}</pre>".format(text)
     elif request.method == 'GET':
         return render_template('apiTest.html')
     else:
         return "FAIL HARD"
+
+@app.route('/apiexplorer', methods=['GET', 'POST'])
+def apiexplorer():
+    def add_access_tok(url, access_token):
+        if "?" in url:
+            return "{0}&access_token={1}".format(url, access_token)
+        else:
+            return "{0}?access_token={1}".format(url, access_token)
+
+    if request.method == 'POST':
+        f = request.form
+        if f['access_token']:
+            rurl = add_access_tok(f['url'], f['access_token'])
+        else:
+            rurl = add_access_tok(f['url'], session['accesstoken'])
+        r = requests.get(api_call(rurl))
+        j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
+        text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
+        return "<pre>{0}</pre>".format(text)
+    elif request.method == 'GET':
+        return render_template('apiexplore.html')
+    else:
+        return "FAIL HARD"
+
 
 if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.

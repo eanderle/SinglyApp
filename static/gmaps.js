@@ -638,10 +638,29 @@ var GMaps = (function($) {
     };
 
     this.drawPolygon = function(options) {
-      options = $.extend({
-        map: this.map
-      }, options);
-      var polygon = new google.maps.Polygon(options);
+      var path = [];
+      var points = options.path;
+
+      if (points.length){
+        if (points[0][0] === undefined){
+          path = points;
+        }
+        else {
+          for (var i=0, latlng; latlng=points[i]; i++){
+            path.push(new google.maps.LatLng(latlng[0], latlng[1]));
+          }
+        }
+      }
+
+      var polygon = new google.maps.Polygon({
+        map: this.map,
+        path: path,
+        strokeColor: options.strokeColor,
+        strokeOpacity: options.strokeOpacity,
+        strokeWeight: options.strokeWeight,
+        fillOpacity: options.fillOpacity,
+        fillColor: options.fillColor
+      });
 
       google.maps.event.addListener(polygon, 'click', function(e) {
         if (options.click) {
