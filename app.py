@@ -3,8 +3,8 @@ from pymaps import Map, PyMap, Icon # import the libraries
 from flask import Flask, request, redirect, session, jsonify
 from flask import render_template
 import requests
-import simplejson
-import json
+import simplejson as json
+
 
 app = Flask(__name__)
 
@@ -83,9 +83,9 @@ def apitesting():
         rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
             f['latitude'],f['longitude'], f['radius'], access)
         r = requests.get(api_call(rurl))
-        print '\n'.join([l.rstrip() for l in  r.text.splitlines()])
-
-        return "<pre>{0}</pre>".format(str(r.text))
+        j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
+        text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
+        return "<pre>{0}</pre>".format(text)
     elif request.method == 'GET':
         return render_template('apiTest.html')
     else:
