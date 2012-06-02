@@ -56,7 +56,7 @@ def testStream():
     for line in r.iter_lines():
         counter = counter + 1
         if line: # filter out keep-alive new lines
-            if counter < 3:
+            if counter < 1000:
                 print json.loads(line)
             else:
                 return "Done"
