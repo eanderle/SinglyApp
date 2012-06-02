@@ -47,6 +47,19 @@ def authInstagram():
 def testAuth():
     return session['accesstoken']
 
+@app.route('/teststream')
+def testStream():
+    r = requests.post('https://stream.twitter.com/1/statuses/filter.json',
+    data={'track': 'requests'}, auth=('username', 'password'))
+    counter = 1;
+    for line in r.iter_lines():
+        counter = counter + 1
+        if line: # filter out keep-alive new lines
+            if counter < 3:
+                print json.loads(line)
+            else:
+                return "Done"
+
 @app.route('/callback')
 def toAccess():
     code = request.args['code']
