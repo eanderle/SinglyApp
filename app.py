@@ -9,6 +9,7 @@ app = Flask(__name__)
 SINGLY_CLIENT_ID = 'b4951689e26fe3cc15c2a940db08e7b7'
 SINGLY_CLIENT_SECRET = '0e9aebaa610bd0e68cb2026934bfafbf'
 
+
 @app.route('/')
 def hello():
     return render_template('index.html')
@@ -46,6 +47,17 @@ app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9
 @app.route('/home', methods=['GET'])
 def home():
 	return render_template('home.html')
+
+@app.route('/apitesting', methods=['GET', 'POST'])
+def apitesting():
+    if request.method == 'POST':
+        f = request.form
+        rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
+            f.latitude,f.longitude, f.radius, session['accesskey'])
+    elif request.method == 'GET':
+        return render_template('apiTest.html')
+    else:
+        return "FAIL HARD"
 
 if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.
