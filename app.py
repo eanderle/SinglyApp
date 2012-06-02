@@ -74,6 +74,10 @@ def showmap():
 def hello():
     return render_template('index.html') + showmap()
 
+@app.route('/home', methods=['GET'])
+def home():
+	return render_template('home.html')
+
 if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.
     port = int(os.environ.get('PORT', 5000))
