@@ -11,6 +11,7 @@ app = Flask(__name__)
 SINGLY_CLIENT_ID = 'b4951689e26fe3cc15c2a940db08e7b7'
 SINGLY_CLIENT_SECRET = '0e9aebaa610bd0e68cb2026934bfafbf'
 SINGLY_API_URL = 'https://api.singly.com/v0'
+app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
 
 def api_call(url):
     """Takes the url and appends the singly api url"""
@@ -57,20 +58,25 @@ def toAccess():
     session['accesstoken'] = data['access_token']
     return redirect('/home')
 
-app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
-
 @app.route('/clearsession')
 def clearsession():
     session.pop('accesstoken', None)
     return "Done"
 
 
-@app.route('/home', methods=['GET'])
+@app.route('/home', methods=['GET', 'POST'])
 def home():
-    if 'accesstoken' in session:
-        return render_template('home.html')
-    else:
-        return redirect('/')
+	if 'accesstoken' in session:
+		if request.method == 'GET':
+			return render_template('home.html')
+		elif request.method == 'POST':
+			
+		else:
+			return "woah woah woah! What http request did you just make!?"
+	else:
+		return redirect('/')
+	else:
+		return "This should never happen!"		
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
