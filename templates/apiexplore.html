@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %} Singly API testing {% endblock %}
+
+{% block content %}
+  <form action="{{ url_for('apiexplorer') }}" method="post" >
+    <dl>
+      <dt>API path and parameters (/types/all?near...):
+      <dd><input type=text name=url>
+      <dt>Access Token (optional):
+      <dd><input type=text name=access_token>
+      <dd><input type=submit value=Submit>
+    </dl>
+  </form>
+{% endblock %}

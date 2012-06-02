@@ -91,6 +91,30 @@ def apitesting():
     else:
         return "FAIL HARD"
 
+@app.route('/apiexplorer', methods=['GET', 'POST'])
+def apiexplorer():
+    def add_access_tok(url, access_token):
+        if "?" in url:
+            return "{0}&access_token={1}".format(url, access_token)
+        else:
+            return "{0}?access_token={1}".format(url, access_token)
+
+    if request.method == 'POST':
+        f = request.form
+        if f['access_token']:
+            rurl = add_access_tok(f['url'], f['access_token'])
+        else:
+            rurl = add_access_tok(f['url'], session['accesstoken'])
+        r = requests.get(api_call(rurl))
+        j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
+        text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
+        return "<pre>{0}</pre>".format(text)
+    elif request.method == 'GET':
+        return render_template('apiexplore.html')
+    else:
+        return "FAIL HARD"
+
+
 if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.
     port = int(os.environ.get('PORT', 5000))
