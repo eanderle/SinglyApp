@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %} Singly API testing {% endblock %}
+
+{% block content %}
+  <form action="{{ url_for('apitesting') }}" method="post" >
+    <dl>
+      <dt>Latitude:
+      <dd><input type=text name=latitude>
+      <dt>Longitude:
+      <dd><input type=text name=longitude>
+      <dt>Radius:
+      <dd><input type=text name=radius>
+      <dd><input type=submit value=Submit>
+    </dl>
+  </form>
+{% endblock %}
