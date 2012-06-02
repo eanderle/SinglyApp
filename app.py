@@ -4,6 +4,7 @@ from flask import Flask, request, redirect, session, jsonify
 from flask import render_template
 import requests
 import simplejson as json
+import random
 
 
 app = Flask(__name__)
@@ -13,15 +14,66 @@ SINGLY_CLIENT_SECRET = '0e9aebaa610bd0e68cb2026934bfafbf'
 SINGLY_API_URL = 'https://api.singly.com/v0'
 app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
 
+LOWEST_SENTIMENT = 0
+HIGHEST_SENTIMENT = 100
+
+# Compute running mean
+# http://www.johndcook.com/standard_deviation.html
+class RunningMean(object):
+	var_sum = 0
+	maximum = 0
+	num_entries = 0
+	mean = 0
+
+	def push(self, x):
+		self.num_entries += 1
+		if x > self.maximum:
+			self.maximum = x
+		if self.num_entries == 1:
+			self.mean = float(x)
+		else:
+			old_mean = self.mean
+			old_var_sum = self.var_sum
+			self.mean = old_mean + ((x - old_mean) / self.num_entries)
+			self.var_sum = old_var_sum + ((x - old_mean) * (x - self.mean))
+	
+	def std_dev(self):
+		return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
+
+# returns a generator of strings representing
+# posts, tweets, etc within a radius of coords
+def get_by_loc(coords, radius):
+    for i in range(100):
+        yield 'sup bro'
+
+# returns the result of sentiment analysis on
+# a given string s
+def analyze_sentiment(s):
+    sentiment = random.randint(LOWEST_SENTIMENT,HIGHEST_SENTIMENT)
+    print 'sentiment: ' + str(sentiment)
+    return sentiment
+
 def api_call(url):
     """Takes the url and appends the singly api url"""
     return "{0}{1}".format(SINGLY_API_URL, url)
+
+def calc_squares(start_lat, start_long, chunks, size):
+    for i in range(-1*(chunks/2), (chunks/2)):
+        for j in range(-1*(chunks/2), (chunks/2)):
+            square_mean = RunningMean()
+            center = ((start_lat+(i+1))/2, (start_long+(j+1))/2)
+            updates = get_by_loc(center, size/2)
+            for update in updates:
+                square_mean.push(analyze_sentiment(update))
+            opacity = (square_mean.mean - LOWEST_SENTIMENT) / (HIGHEST_SENTIMENT - LOWEST_SENTIMENT)
+            print 'opacity: ' + str(opacity)
 
 @app.route('/')
 def hello():
     if 'accesstoken' in session:
         return redirect('/home')
     else:
+        calc_squares(0, 0, 30, .005)
         return render_template('index.html')
 
 @app.route('/signin-twitter')
