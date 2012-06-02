@@ -88,8 +88,6 @@ def home():
 			return "woah woah woah! What http request did you just make!?"
 	else:
 		return redirect('/')
-	else:
-		return "This should never happen!"		
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
