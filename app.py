@@ -52,7 +52,12 @@ def toAccess():
 
 app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
 
- 
+
+@app.route('/home', methods=['GET'])
+def home():
+	return render_template('home.html')
+
+
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
     if request.method == 'POST':
