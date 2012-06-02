@@ -11,6 +11,7 @@ app = Flask(__name__)
 SINGLY_CLIENT_ID = 'b4951689e26fe3cc15c2a940db08e7b7'
 SINGLY_CLIENT_SECRET = '0e9aebaa610bd0e68cb2026934bfafbf'
 SINGLY_API_URL = 'https://api.singly.com/v0'
+app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
 
 def api_call(url):
     """Takes the url and appends the singly api url"""
@@ -47,6 +48,19 @@ def authInstagram():
 def testAuth():
     return session['accesstoken']
 
+@app.route('/teststream')
+def testStream():
+    r = requests.post('https://stream.twitter.com/1/statuses/filter.json',
+    data={'track': 'requests'}, auth=('username', 'password'))
+    counter = 1;
+    for line in r.iter_lines():
+        counter = counter + 1
+        if line: # filter out keep-alive new lines
+            if counter < 3:
+                print json.loads(line)
+            else:
+                return "Done"
+
 @app.route('/callback')
 def toAccess():
     code = request.args['code']
@@ -57,20 +71,25 @@ def toAccess():
     session['accesstoken'] = data['access_token']
     return redirect('/home')
 
-app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
-
 @app.route('/clearsession')
 def clearsession():
     session.pop('accesstoken', None)
     return "Done"
 
 
-@app.route('/home', methods=['GET'])
+@app.route('/home', methods=['GET', 'POST'])
 def home():
-    if 'accesstoken' in session:
-        return render_template('home.html')
-    else:
-        return redirect('/')
+	if 'accesstoken' in session:
+		if request.method == 'GET':
+			return render_template('home.html')
+		elif request.method == 'POST':
+			
+		else:
+			return "woah woah woah! What http request did you just make!?"
+	else:
+		return redirect('/')
+	else:
+		return "This should never happen!"		
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
@@ -90,6 +109,30 @@ def apitesting():
         return render_template('apiTest.html')
     else:
         return "FAIL HARD"
+
+@app.route('/apiexplorer', methods=['GET', 'POST'])
+def apiexplorer():
+    def add_access_tok(url, access_token):
+        if "?" in url:
+            return "{0}&access_token={1}".format(url, access_token)
+        else:
+            return "{0}?access_token={1}".format(url, access_token)
+
+    if request.method == 'POST':
+        f = request.form
+        if f['access_token']:
+            rurl = add_access_tok(f['url'], f['access_token'])
+        else:
+            rurl = add_access_tok(f['url'], session['accesstoken'])
+        r = requests.get(api_call(rurl))
+        j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
+        text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
+        return "<pre>{0}</pre>".format(text)
+    elif request.method == 'GET':
+        return render_template('apiexplore.html')
+    else:
+        return "FAIL HARD"
+
 
 if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.
