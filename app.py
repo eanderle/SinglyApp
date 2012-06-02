@@ -83,7 +83,7 @@ def home():
 		if request.method == 'GET':
 			return render_template('home.html')
 		elif request.method == 'POST':
-			
+			return render_template('home.html')
 		else:
 			return "woah woah woah! What http request did you just make!?"
 	else:
