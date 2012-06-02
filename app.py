@@ -48,15 +48,18 @@ def toAccess():
     Jresponse = r.text
     data = json.loads(Jresponse)
     session['accesstoken'] = data['access_token']
-    return redirect('/')
+    return redirect('/home')
 
 app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
 
 
 @app.route('/home', methods=['GET'])
 def home():
-	return render_template('home.html')
-
+    try: 
+        session['accesstoken']
+        return render_template('home.html')
+    except KeyError:
+        return redirect('/')
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
