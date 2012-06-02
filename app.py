@@ -1,8 +1,10 @@
 import os
 from pymaps import Map, PyMap, Icon # import the libraries
-from flask import Flask, request, redirect, session
+from flask import Flask, request, redirect, session, jsonify
 from flask import render_template
 import requests
+import simplejson
+import json
 
 app = Flask(__name__)
 
@@ -34,16 +36,23 @@ def authInstagram():
     url = 'https://api.singly.com/oauth/authorize?client_id=b4951689e26fe3cc15c2a940db08e7b7&redirect_uri=http://localhost:5000/callback&service=instagram'
     return redirect(url)
 
+@app.route('/testauth')
+def testAuth():
+    return session['accesstoken']
+
 @app.route('/callback')
 def toAccess():
     code = request.args['code']
     postdata = {'client_id': SINGLY_CLIENT_ID, 'client_secret': SINGLY_CLIENT_SECRET, 'code': code}
     r = requests.post('https://api.singly.com/oauth/access_token', data=postdata)
-    session['accesstoken'] = r.text
+    Jresponse = r.text
+    data = json.loads(Jresponse)
+    session['accesstoken'] = data['access_token']
     return redirect('/')
 
 app.secret_key = '\x01\xe9\xc9\xb2[\xf4l\xfc\xf0\x19\x98\xfc\x04+\xfb\x90\x14\x9f\x8e:z}\xce\t'
 
+ 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
     if request.method == 'POST':
@@ -51,7 +60,7 @@ def apitesting():
         rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
             f.latitude,f.longitude, f.radius, session['accesskey'])
     elif request.method == 'GET':
-        return render_template('apiTest.html')
+        return render_template('napiTest.html')
     else:
         return "FAIL HARD"
 
