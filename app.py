@@ -70,9 +70,7 @@ def get_by_loc(coord, radius):
 # returns the result of sentiment analysis on
 # a given string s
 def analyze_sentiment(s):
-    sentiment = random.randint(LOWEST_SENTIMENT,HIGHEST_SENTIMENT)
-    print 'sentiment: ' + str(sentiment)
-    return sentiment
+    return random.randint(LOWEST_SENTIMENT,HIGHEST_SENTIMENT)
 
 def api_call(url, access_token=None):
     """Takes the url and appends the singly api url and access_token"""
@@ -90,23 +88,31 @@ def api_call(url, access_token=None):
 
 
 def calc_squares(start_lat, start_long, chunks, size):
+    squares = []
     for i in range(-1*(chunks/2), (chunks/2)):
         for j in range(-1*(chunks/2), (chunks/2)):
+            lat = start_lat + (size * i)
+            lng = start_long + (size * j)
             square_mean = RunningMean()
             center = ((start_lat+(i+1))/2, (start_long+(j+1))/2)
             updates = get_by_loc(center, size/2)
             for update in updates:
                 square_mean.push(analyze_sentiment(update))
             opacity = (square_mean.mean - LOWEST_SENTIMENT) / (HIGHEST_SENTIMENT - LOWEST_SENTIMENT)
-            print 'opacity: ' + str(opacity)
+            squares.append((lat, lng, opacity))
+    return squares
 
 @app.route('/')
 def hello():
+    start_lat = 37.7750
+    start_long = -122.4183
+    chunks = 30
+    size = .005
     if 'accesstoken' in session:
         return redirect('/home')
     else:
-        calc_squares(0, 0, 30, .005)
-        return render_template('index.html')
+        squares = calc_squares(start_lat, start_long, chunks, size)
+        return render_template('index.html', squares=squares, chunks=chunks)
 
 @app.route('/signin-twitter')
 def toAuth():
