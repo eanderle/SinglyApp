@@ -21,25 +21,25 @@ HIGHEST_SENTIMENT = 100
 # Compute running mean
 # http://www.johndcook.com/standard_deviation.html
 class RunningMean(object):
-        var_sum = 0
-        maximum = 0
-        num_entries = 0
-        mean = 0
+    var_sum = 0
+    maximum = 0
+    num_entries = 0
+    mean = 0
 
-        def push(self, x):
-                self.num_entries += 1
-                if x > self.maximum:
-                        self.maximum = x
-                if self.num_entries == 1:
-                        self.mean = float(x)
-                else:
-                        old_mean = self.mean
-                        old_var_sum = self.var_sum
-                        self.mean = old_mean + ((x - old_mean) / self.num_entries)
-                        self.var_sum = old_var_sum + ((x - old_mean) * (x - self.mean))
+    def push(self, x):
+            self.num_entries += 1
+            if x > self.maximum:
+                    self.maximum = x
+            if self.num_entries == 1:
+                    self.mean = float(x)
+            else:
+                    old_mean = self.mean
+                    old_var_sum = self.var_sum
+                    self.mean = old_mean + ((x - old_mean) / self.num_entries)
+                    self.var_sum = old_var_sum + ((x - old_mean) * (x - self.mean))
 
-        def std_dev(self):
-                return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
+    def std_dev(self):
+            return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
 
 def grab_singly_data(latitude, longitude, radius):
     rurl = "/types/all_feed?near={0},{1}&within={2}".format( latitude, longitude, radius)
@@ -102,17 +102,24 @@ def calc_squares(start_lat, start_long, chunks, size):
             squares.append((lat, lng, opacity))
     return squares
 
+@app.route('/map')
+def map():
+    if 'accesstoken' in session:
+        start_lat = 37.7750
+        start_long = -122.4183
+        chunks = 30
+        size = .005
+        squares = calc_squares(start_lat, start_long, chunks, size)
+        return render_template('index.html', squares=squares, chunks=chunks)
+    else:
+        return redirect('/signin-facebook')
+
 @app.route('/')
 def hello():
-    start_lat = 37.7750
-    start_long = -122.4183
-    chunks = 30
-    size = .005
     if 'accesstoken' in session:
         return redirect('/home')
     else:
-        squares = calc_squares(start_lat, start_long, chunks, size)
-        return render_template('index.html', squares=squares, chunks=chunks)
+        return redirect('/signup')
 
 @app.route('/signin-twitter')
 def toAuth():
