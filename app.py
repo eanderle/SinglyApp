@@ -40,13 +40,17 @@ class RunningMean(object):
         def std_dev(self):
                 return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
 
+def grab_singly_data(latitude, longitude, radius):
+    rurl = "/types/all_feed?near={0},{1}&within={2}".format( latitude, longitude, radius)
+    r = requests.get(api_call(rurl))
+    return json.loads(r.text)
+
 # returns a generator of strings representing
 # posts, tweets, etc within a radius of coords
-def get_by_loc(lat,long, radius):
-
-
-    for i in range(100):
-        yield 'sup bro'
+def get_by_loc(latitude, longitude, radius):
+    singlyData = grab_singly_data(latitude, longitude, radius)
+    #twitterData = grab_twitter_data(latitude, longitude, radius)
+    return singlyData
 
 # returns the result of sentiment analysis on
 # a given string s
