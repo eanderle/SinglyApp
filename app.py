@@ -4,6 +4,7 @@ from flask import Flask, request, redirect, session, jsonify
 from flask import render_template
 import requests
 import simplejson as json
+import socket
 
 
 app = Flask(__name__)
@@ -50,16 +51,21 @@ def testAuth():
 
 @app.route('/teststream')
 def testStream():
-    r = requests.post('https://stream.twitter.com/1/statuses/filter.json',
-    data={'track': 'requests'}, auth=('username', 'password'))
-    counter = 1;
-    for line in r.iter_lines():
-        counter = counter + 1
-        if line: # filter out keep-alive new lines
-            if counter < 1000:
-                print json.loads(line)
-            else:
-                return "Done"
+    #timeout = 10
+    #socket.setdefaulttimeout(timeout)
+    #r = requests.post('https://stream.twitter.com/1/statuses/filter.json',
+    #data={'track': 'requests'}, auth=('CEWendel', 'bflobflo16'))
+    #for line in r.iter_lines():
+    #    if line: # filter out keep-alive new lines
+    #        print json.loads(line)
+    data = []
+    for i in range(1,3):
+        r = requests.get('https://search.twitter.com/search.json?q=since:2012-05-15&geocode=37.781157,-122.398720,10km&rpp=100&page='+str(i))
+        Jresponse = r.text
+        newData = json.loads(Jresponse)
+        data.append(newData)
+        
+    return str(data)    
 
 @app.route('/callback')
 def toAccess():
@@ -88,8 +94,6 @@ def home():
 			return "woah woah woah! What http request did you just make!?"
 	else:
 		return redirect('/')
-	else:
-		return "This should never happen!"		
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
