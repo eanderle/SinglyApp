@@ -20,29 +20,31 @@ HIGHEST_SENTIMENT = 100
 # Compute running mean
 # http://www.johndcook.com/standard_deviation.html
 class RunningMean(object):
-	var_sum = 0
-	maximum = 0
-	num_entries = 0
-	mean = 0
+        var_sum = 0
+        maximum = 0
+        num_entries = 0
+        mean = 0
 
-	def push(self, x):
-		self.num_entries += 1
-		if x > self.maximum:
-			self.maximum = x
-		if self.num_entries == 1:
-			self.mean = float(x)
-		else:
-			old_mean = self.mean
-			old_var_sum = self.var_sum
-			self.mean = old_mean + ((x - old_mean) / self.num_entries)
-			self.var_sum = old_var_sum + ((x - old_mean) * (x - self.mean))
-	
-	def std_dev(self):
-		return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
+        def push(self, x):
+                self.num_entries += 1
+                if x > self.maximum:
+                        self.maximum = x
+                if self.num_entries == 1:
+                        self.mean = float(x)
+                else:
+                        old_mean = self.mean
+                        old_var_sum = self.var_sum
+                        self.mean = old_mean + ((x - old_mean) / self.num_entries)
+                        self.var_sum = old_var_sum + ((x - old_mean) * (x - self.mean))
+
+        def std_dev(self):
+                return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
 
 # returns a generator of strings representing
 # posts, tweets, etc within a radius of coords
-def get_by_loc(coords, radius):
+def get_by_loc(lat,long, radius):
+
+
     for i in range(100):
         yield 'sup bro'
 
@@ -53,9 +55,20 @@ def analyze_sentiment(s):
     print 'sentiment: ' + str(sentiment)
     return sentiment
 
-def api_call(url):
-    """Takes the url and appends the singly api url"""
-    return "{0}{1}".format(SINGLY_API_URL, url)
+def api_call(url, access_token=None):
+    """Takes the url and appends the singly api url and access_token"""
+    if access_token:
+        tok = access_token
+    elif not access_token and 'accesstoken' in session:
+        tok = session['accesstoken']
+    elif not access_token and 'accesstoken' not in session:
+        return "FAIL HARD"
+
+    if '?' in url: #includes some parameters
+        return "{0}{1}&access_token={2}".format(SINGLY_API_URL, url, tok)
+    else:
+        return "{0}{1}?access_token={2}".format(SINGLY_API_URL, url, tok)
+
 
 def calc_squares(start_lat, start_long, chunks, size):
     for i in range(-1*(chunks/2), (chunks/2)):
@@ -131,26 +144,24 @@ def clearsession():
 
 @app.route('/home', methods=['GET', 'POST'])
 def home():
-	if 'accesstoken' in session:
-		if request.method == 'GET':
-			return render_template('home.html')
-		elif request.method == 'POST':
-			return render_template('home.html')
-		else:
-			return "woah woah woah! What http request did you just make!?"
-	else:
-		return redirect('/')
+        if 'accesstoken' in session:
+                if request.method == 'GET':
+                        return render_template('home.html')
+                elif request.method == 'POST':
+                        return render_template('home.html')
+                else:
+                        return "woah woah woah! What http request did you just make!?"
+        else:
+                return redirect('/')
+
+
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
     if request.method == 'POST':
         f = request.form
-        if 'accesstoken' in session:
-            access = session['accesstoken']
-        else:
-            access = 'fake'
-        rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
-            f['latitude'],f['longitude'], f['radius'], access)
+        rurl = "/types/all_feed?near={0},{1}&within={2}".format(
+            f['latitude'],f['longitude'], f['radius'])
         r = requests.get(api_call(rurl))
         j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
         text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
@@ -162,19 +173,13 @@ def apitesting():
 
 @app.route('/apiexplorer', methods=['GET', 'POST'])
 def apiexplorer():
-    def add_access_tok(url, access_token):
-        if "?" in url:
-            return "{0}&access_token={1}".format(url, access_token)
-        else:
-            return "{0}?access_token={1}".format(url, access_token)
-
     if request.method == 'POST':
         f = request.form
         if f['access_token']:
-            rurl = add_access_tok(f['url'], f['access_token'])
+            rurl = api_call(f['url'], f['access_token'])
         else:
-            rurl = add_access_tok(f['url'], session['accesstoken'])
-        r = requests.get(api_call(rurl))
+            rurl = api_call(f['url'])
+        r = requests.get(rurl)
         j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
         text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
         return "<pre>{0}</pre>".format(text)
