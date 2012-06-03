@@ -23,24 +23,21 @@
           console.log(e);
         }
       });
-      for (i=(chunks/2)*-1; i < chunks/2; i=i+1) {
-        for (j=(chunks/2)*-1; j < chunks/2; j=j+1) {
-          var poly_path = [
-            [start_lat + (size * i), start_lng + (size * j)],
-            [start_lat + (size * i), start_lng + (size * (j+1))],
-            [start_lat + (size * (i+1)), start_lng + (size * (j+1))],
-            [start_lat + (size * (i+1)), start_lng + (size * j)]
-          ];
-          map.drawPolygon({
-            path: poly_path,
-            strokeColor: '#131540',
-            fillColor: '#'+Math.floor(Math.random()*16777215).toString(16),
-            fillOpacity: 0.3, 
-            strokeOpacity: 0.3,
-            strokeWeight: 0
-          });
-        }
-      }
+      {% for square in squares %}
+        var poly_path = [
+            [{{square[0]}}, {{square[1]}}],
+            [{{square[0]}} + size, {{square[1]}}],
+            [{{square[0]}} + size, {{square[1]}} + size],
+            [{{square[0]}}, {{square[1]}} + size]
+        ];
+        map.drawPolygon({
+          path: poly_path,
+          fillColor: '#00FF00',
+          fillOpacity: {{square[2]}},
+          strokeOpacity: 0.3,
+          strokeWeight: 0
+        });
+      {% endfor %}
     });
   </script>
 </head>
