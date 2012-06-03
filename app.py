@@ -59,7 +59,10 @@ def grab_twitter_data(lat, longitude, rad):
 
 # returns a generator of strings representing
 # posts, tweets, etc within a radius of coords
-def get_by_loc(latitude, longitude, radius):
+def get_by_loc(coord, radius):
+    latitude = str(coord[0])
+    longitude = str(coord[1])
+    radius = str(radius)
     singlyData = grab_singly_data(latitude, longitude, radius)
     twitterData = grab_twitter_data(latitude, longitude, radius)
     return singlyData.append(twitterData)
