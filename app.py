@@ -7,6 +7,7 @@ import simplejson as json
 import random
 
 
+
 app = Flask(__name__)
 
 SINGLY_CLIENT_ID = 'b4951689e26fe3cc15c2a940db08e7b7'
@@ -20,40 +21,68 @@ HIGHEST_SENTIMENT = 100
 # Compute running mean
 # http://www.johndcook.com/standard_deviation.html
 class RunningMean(object):
-	var_sum = 0
-	maximum = 0
-	num_entries = 0
-	mean = 0
+        var_sum = 0
+        maximum = 0
+        num_entries = 0
+        mean = 0
 
-	def push(self, x):
-		self.num_entries += 1
-		if x > self.maximum:
-			self.maximum = x
-		if self.num_entries == 1:
-			self.mean = float(x)
-		else:
-			old_mean = self.mean
-			old_var_sum = self.var_sum
-			self.mean = old_mean + ((x - old_mean) / self.num_entries)
-			self.var_sum = old_var_sum + ((x - old_mean) * (x - self.mean))
-	
-	def std_dev(self):
-		return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
+        def push(self, x):
+                self.num_entries += 1
+                if x > self.maximum:
+                        self.maximum = x
+                if self.num_entries == 1:
+                        self.mean = float(x)
+                else:
+                        old_mean = self.mean
+                        old_var_sum = self.var_sum
+                        self.mean = old_mean + ((x - old_mean) / self.num_entries)
+                        self.var_sum = old_var_sum + ((x - old_mean) * (x - self.mean))
+
+        def std_dev(self):
+                return sqrt(self.var_sum / (self.num_entries - 1)) if self.num_entries > 1 else 0
+
+def grab_singly_data(latitude, longitude, radius):
+    rurl = "/types/all_feed?near={0},{1}&within={2}".format( latitude, longitude, radius)
+    r = requests.get(api_call(rurl))
+    return json.loads(r.text)
+
+def grab_twitter_data(lat, longitude, rad):
+    data = []
+    rurl = "https://search.twitter.com/search.json?q=since:2012-05-15&geocode={0},{1},{2}km&rpp=100&page=".format(lat,longitude, rad)
+    print "OMGURL========\n\n\n {0}\n\n\ =========".format(rurl)
+    for i in range(1,10):
+        r = requests.get(rurl+str(i))
+        Jresponse = r.text
+        newData = json.loads(Jresponse)
+        data.append(newData)
+    return data
 
 # returns a generator of strings representing
 # posts, tweets, etc within a radius of coords
-def get_by_loc(coords, radius):
-    for i in range(100):
-        yield 'sup bro'
+def get_by_loc(latitude, longitude, radius):
+    singlyData = grab_singly_data(latitude, longitude, radius)
+    twitterData = grab_twitter_data(latitude, longitude, radius)
+    return singlyData.append(twitterData)
 
 # returns the result of sentiment analysis on
 # a given string s
 def analyze_sentiment(s):
     return random.randint(LOWEST_SENTIMENT,HIGHEST_SENTIMENT)
 
-def api_call(url):
-    """Takes the url and appends the singly api url"""
-    return "{0}{1}".format(SINGLY_API_URL, url)
+def api_call(url, access_token=None):
+    """Takes the url and appends the singly api url and access_token"""
+    if access_token:
+        tok = access_token
+    elif not access_token and 'accesstoken' in session:
+        tok = session['accesstoken']
+    elif not access_token and 'accesstoken' not in session:
+        return "FAIL HARD"
+
+    if '?' in url: #includes some parameters
+        return "{0}{1}&access_token={2}".format(SINGLY_API_URL, url, tok)
+    else:
+        return "{0}{1}?access_token={2}".format(SINGLY_API_URL, url, tok)
+
 
 def calc_squares(start_lat, start_long, chunks, size):
     squares = []
@@ -108,16 +137,16 @@ def testAuth():
 
 @app.route('/teststream')
 def testStream():
-    r = requests.post('https://stream.twitter.com/1/statuses/filter.json',
-    data={'track': 'requests'}, auth=('username', 'password'))
-    counter = 1;
-    for line in r.iter_lines():
-        counter = counter + 1
-        if line: # filter out keep-alive new lines
-            if counter < 3:
-                print json.loads(line)
-            else:
-                return "Done"
+    data = []
+    for i in range(1,10):
+        r = requests.get('https://search.twitter.com/search.json?q=since:2012-05-15&geocode=37.781157,-122.398720,10km&rpp=100&page='+str(i))
+        Jresponse = r.text
+        newData = json.loads(Jresponse)
+        data.append(newData)
+
+    jt = json.dumps(data, indent=2 * ' ')
+    twittertxt = '\n'.join([l.rstrip() for l in jt.splitlines()])
+    return "<pre>{0}</pre>".format(twittertxt)
 
 @app.route('/callback')
 def toAccess():
@@ -137,30 +166,31 @@ def clearsession():
 
 @app.route('/home', methods=['GET', 'POST'])
 def home():
-	if 'accesstoken' in session:
-		if request.method == 'GET':
-			return render_template('home.html')
-		elif request.method == 'POST':
-			return render_template('home.html')
-		else:
-			return "woah woah woah! What http request did you just make!?"
-	else:
-		return redirect('/')
+        if 'accesstoken' in session:
+                if request.method == 'GET':
+                        return render_template('home.html')
+                elif request.method == 'POST':
+                        return render_template('home.html')
+                else:
+                        return "woah woah woah! What http request did you just make!?"
+        else:
+                return redirect('/')
+
+
 
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
     if request.method == 'POST':
-        f = request.form
-        if 'accesstoken' in session:
-            access = session['accesstoken']
-        else:
-            access = 'fake'
-        rurl = "/types/all_feed?near={0},{1}&within={2}&access_token={3}".format(
-            f['latitude'],f['longitude'], f['radius'], access)
-        r = requests.get(api_call(rurl))
-        j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
-        text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
-        return "<pre>{0}</pre>".format(text)
+        f = {}
+        for (k,v) in request.form.iteritems():
+            f[k] = v.strip()
+        singlyData = grab_singly_data(f['latitude'], f['longitude'], f['radius'])
+        twitterData = grab_twitter_data(f['latitude'], f['longitude'], f['radius'])
+        js = json.dumps(singlyData, indent=2 * ' ')
+        singlytxt = '\n'.join([l.rstrip() for l in  js.splitlines()])
+        jt = json.dumps(twitterData, indent=2 * ' ')
+        twittertxt = '\n'.join([l.rstrip() for l in jt.splitlines()])
+        return "<h3>Singly Data</h3><pre>{0}\n\n\n</pre><h3>Twitter Data</h3><pre>{1}</pre>".format(singlytxt, twittertxt)
     elif request.method == 'GET':
         return render_template('apiTest.html')
     else:
@@ -168,19 +198,13 @@ def apitesting():
 
 @app.route('/apiexplorer', methods=['GET', 'POST'])
 def apiexplorer():
-    def add_access_tok(url, access_token):
-        if "?" in url:
-            return "{0}&access_token={1}".format(url, access_token)
-        else:
-            return "{0}?access_token={1}".format(url, access_token)
-
     if request.method == 'POST':
         f = request.form
         if f['access_token']:
-            rurl = add_access_tok(f['url'], f['access_token'])
+            rurl = api_call(f['url'], f['access_token'])
         else:
-            rurl = add_access_tok(f['url'], session['accesstoken'])
-        r = requests.get(api_call(rurl))
+            rurl = api_call(f['url'])
+        r = requests.get(rurl)
         j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
         text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
         return "<pre>{0}</pre>".format(text)
