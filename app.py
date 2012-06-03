@@ -46,12 +46,23 @@ def grab_singly_data(latitude, longitude, radius):
     r = requests.get(api_call(rurl))
     return json.loads(r.text)
 
+def grab_twitter_data(lat, longitude, rad):
+    data = []
+    rurl = "https://search.twitter.com/search.json?q=since:2012-05-15&geocode={0},{1},{2}km&rpp=100&page=".format(lat,longitude, rad)
+    print "OMGURL========\n\n\n {0}\n\n\ =========".format(rurl)
+    for i in range(1,10):
+        r = requests.get(rurl+str(i))
+        Jresponse = r.text
+        newData = json.loads(Jresponse)
+        data.append(newData)
+    return data
+
 # returns a generator of strings representing
 # posts, tweets, etc within a radius of coords
 def get_by_loc(latitude, longitude, radius):
     singlyData = grab_singly_data(latitude, longitude, radius)
-    #twitterData = grab_twitter_data(latitude, longitude, radius)
-    return singlyData
+    twitterData = grab_twitter_data(latitude, longitude, radius)
+    return singlyData.append(twitterData)
 
 # returns the result of sentiment analysis on
 # a given string s
@@ -121,13 +132,15 @@ def testAuth():
 @app.route('/teststream')
 def testStream():
     data = []
-    for i in range(1,3):
+    for i in range(1,10):
         r = requests.get('https://search.twitter.com/search.json?q=since:2012-05-15&geocode=37.781157,-122.398720,10km&rpp=100&page='+str(i))
         Jresponse = r.text
         newData = json.loads(Jresponse)
         data.append(newData)
-        
-    return str(data)    
+
+    jt = json.dumps(data, indent=2 * ' ')
+    twittertxt = '\n'.join([l.rstrip() for l in jt.splitlines()])
+    return "<pre>{0}</pre>".format(twittertxt)
 
 @app.route('/callback')
 def toAccess():
@@ -162,13 +175,16 @@ def home():
 @app.route('/apitesting', methods=['GET', 'POST'])
 def apitesting():
     if request.method == 'POST':
-        f = request.form
-        rurl = "/types/all_feed?near={0},{1}&within={2}".format(
-            f['latitude'],f['longitude'], f['radius'])
-        r = requests.get(api_call(rurl))
-        j1 = json.dumps(json.loads(r.text), indent=4 * ' ')
-        text = '\n'.join([l.rstrip() for l in  j1.splitlines()])
-        return "<pre>{0}</pre>".format(text)
+        f = {}
+        for (k,v) in request.form.iteritems():
+            f[k] = v.strip()
+        singlyData = grab_singly_data(f['latitude'], f['longitude'], f['radius'])
+        twitterData = grab_twitter_data(f['latitude'], f['longitude'], f['radius'])
+        js = json.dumps(singlyData, indent=2 * ' ')
+        singlytxt = '\n'.join([l.rstrip() for l in  js.splitlines()])
+        jt = json.dumps(twitterData, indent=2 * ' ')
+        twittertxt = '\n'.join([l.rstrip() for l in jt.splitlines()])
+        return "<h3>Singly Data</h3><pre>{0}\n\n\n</pre><h3>Twitter Data</h3><pre>{1}</pre>".format(singlytxt, twittertxt)
     elif request.method == 'GET':
         return render_template('apiTest.html')
     else:
